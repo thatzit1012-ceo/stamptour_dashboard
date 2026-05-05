@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>스탬프투어 결과 보고</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f0f4f8;
+  --white: #ffffff;
+  --border: #e2e8f0;
+  --radius: 16px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.07);
+  --shadow-hover: 0 12px 40px rgba(0,0,0,0.13);
+  --blue: #2563eb;
+  --teal: #0891b2;
+  --green: #059669;
+  --amber: #d97706;
+  --violet: #7c3aed;
+  --rose: #e11d48;
+  --blue-tint: #eff6ff;
+  --teal-tint: #ecfeff;
+  --green-tint: #ecfdf5;
+  --amber-tint: #fffbeb;
+  --violet-tint: #f5f3ff;
+  --text: #1e293b;
+  --muted: #64748b;
+  --font: 'Poppins', sans-serif;
+}
+
+body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── SECTION VISIBILITY ── */
+.section { display: none; }
+.section.active { display: block; }
+
+/* ── HEADER ── */
+.header { text-align: center; padding: 52px 24px 0; }
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--blue-tint); border: 1px solid #bfdbfe;
+  border-radius: 999px; padding: 6px 18px;
+  font-size: 12px; font-weight: 600; color: var(--blue);
+  letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 20px;
+}
+.eyebrow-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); animation: pulse 2s infinite; }
+.header h1 { font-size: clamp(28px,4vw,48px); font-weight: 800; line-height: 1.15; margin-bottom: 12px; }
+.header h1 .accent { color: var(--blue); }
+.header p { font-size: 15px; color: var(--muted); max-width: 520px; margin: 0 auto; line-height: 1.7; }
+.divider { width: 60px; height: 5px; background: linear-gradient(90deg, var(--blue), var(--teal)); border-radius: 99px; margin: 28px auto 0; }
+
+/* ══════════════════════════════════════
+   UPLOAD SCREEN
+══════════════════════════════════════ */
+.upload-wrap { max-width: 680px; margin: 0 auto; padding: 40px 24px 80px; }
+
+.upload-section { margin-bottom: 24px; }
+.section-label {
+  font-size: 12px; font-weight: 700; color: var(--muted);
+  letter-spacing: 0.06em; text-transform: uppercase;
+  margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+}
+.section-label span {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--blue); color: #fff; font-size: 11px; font-weight: 800;
+}
+
+.drop-zone {
+  background: var(--white); border: 2.5px dashed var(--border);
+  border-radius: var(--radius); padding: 32px 24px; text-align: center;
+  cursor: pointer; transition: all 0.25s ease; position: relative;
+}
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: var(--blue); background: var(--blue-tint);
+  box-shadow: 0 0 0 4px rgba(37,99,235,0.10); transform: translateY(-2px);
+}
+.drop-zone.loaded { border-color: var(--green); background: var(--green-tint); border-style: solid; }
+.drop-icon { font-size: 32px; margin-bottom: 10px; display: block; }
+.drop-zone h3 { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 5px; }
+.drop-zone p { font-size: 12px; color: var(--muted); margin-bottom: 14px; line-height: 1.5; }
+.btn-pick {
+  display: inline-block; background: var(--blue); color: #fff; border: none;
+  border-radius: 10px; padding: 9px 20px; font-family: var(--font);
+  font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+}
+.btn-pick:hover { background: #1d4ed8; transform: translateY(-1px); }
+.file-input { display: none; }
+.status-badge {
+  display: none; align-items: center; gap: 8px; margin-top: 12px;
+  font-size: 12px; font-weight: 600; color: var(--green); justify-content: center;
+}
+.status-badge.show { display: flex; }
+
+.btn-start {
+  display: block; width: 100%;
+  background: linear-gradient(135deg, var(--blue), var(--teal));
+  color: #fff; border: none; border-radius: 14px; padding: 17px 32px;
+  font-family: var(--font); font-size: 16px; font-weight: 800; cursor: pointer;
+  transition: all 0.3s; letter-spacing: 0.02em;
+  box-shadow: 0 8px 24px rgba(37,99,235,0.3);
+  opacity: 0.4; pointer-events: none; margin-top: 8px;
+}
+.btn-start.active { opacity: 1; pointer-events: auto; }
+.btn-start.active:hover { transform: translateY(-3px); box-shadow: 0 16px 40px rgba(37,99,235,0.4); }
+
+.info-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-top: 32px; }
+.info-card {
+  background: var(--white); border-radius: var(--radius);
+  border: 1px solid var(--border); padding: 18px; text-align: center;
+  box-shadow: var(--shadow);
+}
+.info-card .ic { font-size: 26px; margin-bottom: 8px; }
+.info-card strong { display: block; font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.info-card small { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+/* ══════════════════════════════════════
+   DASHBOARD & DETAIL SHARED
+══════════════════════════════════════ */
+.navbar {
+  display: flex; align-items: center; justify-content: space-between;
+  max-width: 1340px; margin: 28px auto 0; padding: 0 24px; flex-wrap: wrap; gap: 12px;
+}
+.nav-left { display: flex; gap: 10px; flex-wrap: wrap; }
+.nav-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--white); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 8px 16px;
+  font-family: var(--font); font-size: 13px; font-weight: 600;
+  color: var(--muted); cursor: pointer; transition: all 0.2s;
+  box-shadow: var(--shadow); text-decoration: none;
+}
+.nav-btn:hover, .nav-btn.active { border-color: var(--blue); color: var(--blue); background: var(--blue-tint); }
+
+.record-pill {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: 999px; padding: 8px 18px;
+  font-size: 13px; font-weight: 600; color: var(--text); box-shadow: var(--shadow);
+}
+.live-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px rgba(5,150,105,0.2); animation: pulse 1.8s infinite; }
+
+.container { max-width: 1340px; margin: 0 auto; padding: 24px 24px 80px; }
+
+.card {
+  background: var(--white); border-radius: var(--radius);
+  border: 1px solid var(--border); box-shadow: var(--shadow);
+  transition: box-shadow 0.25s, transform 0.25s; overflow: hidden;
+}
+.card:hover { box-shadow: var(--shadow-hover); transform: translateY(-3px); }
+.card-header { padding: 20px 24px 14px; border-bottom: 1px solid var(--border); }
+.card-title { font-size: 14px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.card-title .ic { font-size: 17px; }
+.card-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.card-body { padding: 18px 20px 22px; }
+
+/* KPI */
+.kpi-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; margin-bottom: 24px; }
+.kpi-card {
+  background: var(--white); border-radius: var(--radius);
+  border: 1px solid var(--border); box-shadow: var(--shadow);
+  padding: 22px; display: flex; align-items: flex-start; gap: 14px;
+  transition: box-shadow 0.25s, transform 0.25s;
+}
+.kpi-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-3px); }
+.kpi-card.blue { border-left: 5px solid var(--blue); }
+.kpi-card.teal { border-left: 5px solid var(--teal); }
+.kpi-card.green { border-left: 5px solid var(--green); }
+.kpi-icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.kpi-card.blue .kpi-icon { background: var(--blue-tint); }
+.kpi-card.teal .kpi-icon { background: var(--teal-tint); }
+.kpi-card.green .kpi-icon { background: var(--green-tint); }
+.kpi-label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px; }
+.kpi-value { font-size: 30px; font-weight: 800; line-height: 1; }
+.kpi-card.blue .kpi-value { color: var(--blue); }
+.kpi-card.teal .kpi-value { color: var(--teal); }
+.kpi-card.green .kpi-value { color: var(--green); }
+.kpi-meta { font-size: 11px; color: var(--muted); margin-top: 5px; }
+
+/* ROWS */
+.row { margin-bottom: 24px; }
+.row-2col       { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.row-2col-38    { display: grid; grid-template-columns: 3fr 2fr; gap: 24px; }
+
+/* Detail stat strip */
+.stat-strip { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 24px; }
+.stat-item {
+  background: var(--white); border-radius: var(--radius);
+  border: 1px solid var(--border); box-shadow: var(--shadow);
+  padding: 18px 20px; transition: all 0.2s;
+}
+.stat-item:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
+.stat-item .label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
+.stat-item .value { font-size: 22px; font-weight: 800; color: var(--text); }
+.stat-item .sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.stat-item.c-blue .value { color: var(--blue); }
+.stat-item.c-teal .value { color: var(--teal); }
+.stat-item.c-green .value { color: var(--green); }
+.stat-item.c-amber .value { color: var(--amber); }
+
+/* Progress bars */
+.progress-row { display: flex; flex-direction: column; gap: 10px; }
+.progress-item { display: flex; flex-direction: column; gap: 4px; }
+.progress-label { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: var(--text); }
+.progress-bar-bg { background: #f1f5f9; border-radius: 99px; height: 8px; overflow: hidden; }
+.progress-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--blue), var(--teal)); width: 0; transition: width 1s ease; }
+
+/* Table */
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table th { background: #f8fafc; font-weight: 700; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 10px 14px; border-bottom: 1.5px solid var(--border); text-align: left; }
+.data-table td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: var(--text); }
+.data-table tr:hover td { background: #f8fafc; }
+.badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.badge-blue  { background: var(--blue-tint);  color: var(--blue); }
+.badge-green { background: var(--green-tint); color: var(--green); }
+.badge-amber { background: var(--amber-tint); color: var(--amber); }
+
+/* Modebar hide */
+.js-plotly-plot .plotly .modebar { display: none !important; }
+
+/* Animations */
+.fade-up { opacity: 0; transform: translateY(28px); transition: opacity 0.55s ease, transform 0.55s ease; }
+.fade-up.visible { opacity: 1; transform: translateY(0); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+.anim-in { animation: fadeUp 0.6s ease both; }
+
+@media (max-width: 900px) {
+  .kpi-grid, .stat-strip { grid-template-columns: repeat(2,1fr); }
+  .row-2col, .row-2col-38 { grid-template-columns: 1fr; }
+  .info-row { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .kpi-grid, .stat-strip { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════
+     SECTION 1: UPLOAD
+════════════════════════════════════ -->
+<div id="sec-upload" class="section active">
+  <header class="header anim-in">
+    <div class="eyebrow"><span class="eyebrow-dot"></span>함평나비대축제 2026</div>
+    <h1>스탬프투어<br><span class="accent">Performance</span> 결과 보고</h1>
+    <p>JSON 데이터 파일 3개를 업로드하면 스탬프 발행·여행후기·선물신청 현황을 인터랙티브 대시보드로 확인하실 수 있습니다.</p>
+    <div class="divider"></div>
+  </header>
+
+  <div class="upload-wrap">
+    <!-- File 1 -->
+    <div class="upload-section">
+      <div class="section-label"><span>1</span> 스탬프 현황 (스탬프_현황.json)</div>
+      <div class="drop-zone" id="drop1" ondragover="onDragOver(event,1)" ondragleave="onDragLeave(event,1)" ondrop="onDrop(event,1)">
+        <span class="drop-icon">🏷️</span>
+        <h3>스탬프 현황 파일</h3>
+        <p>스탬프 인증 내역이 담긴 JSON 배열 파일을 드래그하거나 선택하세요.</p>
+        <button class="btn-pick" onclick="document.getElementById('file1').click()">파일 선택</button>
+        <input type="file" id="file1" class="file-input" accept=".json" onchange="handleFile(1, this.files[0])">
+        <div class="status-badge" id="status1">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#059669"/><path d="M5 8l2 2 4-4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span id="status1-text"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- File 2 -->
+    <div class="upload-section">
+      <div class="section-label"><span>2</span> 여행후기 (여행후기.json)</div>
+      <div class="drop-zone" id="drop2" ondragover="onDragOver(event,2)" ondragleave="onDragLeave(event,2)" ondrop="onDrop(event,2)">
+        <span class="drop-icon">✍️</span>
+        <h3>여행후기 파일</h3>
+        <p>여행후기 작성 내역이 담긴 JSON 배열 파일을 드래그하거나 선택하세요.</p>
+        <button class="btn-pick" onclick="document.getElementById('file2').click()">파일 선택</button>
+        <input type="file" id="file2" class="file-input" accept=".json" onchange="handleFile(2, this.files[0])">
+        <div class="status-badge" id="status2">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#059669"/><path d="M5 8l2 2 4-4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span id="status2-text"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- File 3 -->
+    <div class="upload-section">
+      <div class="section-label"><span>3</span> 선물신청자 (스탬프_현황_여행후기_선물신청자.json)</div>
+      <div class="drop-zone" id="drop3" ondragover="onDragOver(event,3)" ondragleave="onDragLeave(event,3)" ondrop="onDrop(event,3)">
+        <span class="drop-icon">🎁</span>
+        <h3>선물신청자 파일</h3>
+        <p>선물 신청자 명단이 담긴 JSON 배열 파일을 드래그하거나 선택하세요.</p>
+        <button class="btn-pick" onclick="document.getElementById('file3').click()">파일 선택</button>
+        <input type="file" id="file3" class="file-input" accept=".json" onchange="handleFile(3, this.files[0])">
+        <div class="status-badge" id="status3">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#059669"/><path d="M5 8l2 2 4-4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span id="status3-text"></span>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-start" id="btnStart" onclick="launchDashboard()">📊 대시보드 보기</button>
+
+    <div class="info-row" style="margin-top:32px">
+      <div class="info-card"><div class="ic">🏷️</div><strong>스탬프 현황</strong><small>발행된 스탬프 인증 전체 내역 및 일별 추이</small></div>
+      <div class="info-card"><div class="ic">✍️</div><strong>여행후기</strong><small>장소별 여행후기 작성 현황 분석</small></div>
+      <div class="info-card"><div class="ic">🎁</div><strong>선물신청</strong><small>지역별 선물신청자 분포 및 신청 추이</small></div>
+    </div>
+  </div>
+</div><!-- /sec-upload -->
+
+
+<!-- ════════════════════════════════════
+     SECTION 2: DASHBOARD
+════════════════════════════════════ -->
+<div id="sec-dashboard" class="section">
+  <header class="header">
+    <div class="eyebrow"><span class="eyebrow-dot"></span>함평나비대축제 2026</div>
+    <h1>스탬프투어 <span class="accent">Performance</span> 결과 보고</h1>
+    <p>스탬프 발행 현황, 여행후기, 선물신청자 데이터를 한눈에 분석합니다.</p>
+    <div class="divider"></div>
+  </header>
+
+  <nav class="navbar">
+    <div class="nav-left">
+      <button class="nav-btn active" onclick="showSection('dashboard')">📊 대시보드</button>
+      <button class="nav-btn" onclick="showSection('detail')">🔍 상세 분석</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div class="record-pill">
+        <span class="live-dot"></span>
+        <span id="record-summary">—</span>
+      </div>
+      <button class="nav-btn" onclick="showSection('upload')">↩ 재업로드</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <!-- KPI -->
+    <div class="kpi-grid fade-up" id="d-kpi">
+      <div class="kpi-card blue">
+        <div class="kpi-icon">🏷️</div>
+        <div><div class="kpi-label">총 발행 스탬프</div><div class="kpi-value" id="kpi-stamps">—</div><div class="kpi-meta" id="kpi-stamps-meta"></div></div>
+      </div>
+      <div class="kpi-card teal">
+        <div class="kpi-icon">🎁</div>
+        <div><div class="kpi-label">선물신청자</div><div class="kpi-value" id="kpi-gifts">—</div><div class="kpi-meta" id="kpi-gifts-meta"></div></div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-icon">✍️</div>
+        <div><div class="kpi-label">여행후기</div><div class="kpi-value" id="kpi-reviews">—</div><div class="kpi-meta" id="kpi-reviews-meta"></div></div>
+      </div>
+    </div>
+
+    <!-- Row 1: Timeseries + Donut -->
+    <div class="row row-2col-38 fade-up" id="d-row1">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="ic">📈</span> 일별 스탬프 발행 추이</div>
+          <div class="card-sub">전체 기간 일별 스탬프 인증 건수</div>
+        </div>
+        <div class="card-body"><div id="chart-timeseries"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="ic">🍩</span> 장소별 스탬프 비중</div>
+          <div class="card-sub">장소별 인증 건수 세그먼트</div>
+        </div>
+        <div class="card-body"><div id="chart-donut"></div></div>
+      </div>
+    </div>
+
+    <!-- Row 2: 2-col horizontal bars -->
+    <div class="row row-2col fade-up" id="d-row2">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="ic">📍</span> 장소별 스탬프 인증수 Top 10</div>
+          <div class="card-sub">인증 건수 기준 상위 10개 장소</div>
+        </div>
+        <div class="card-body"><div id="chart-bar-stamps"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="ic">🖊️</span> 장소별 여행후기 수 Top 10</div>
+          <div class="card-sub">여행후기 작성 건수 기준 상위 10개 장소</div>
+        </div>
+        <div class="card-body"><div id="chart-bar-reviews"></div></div>
+      </div>
+    </div>
+
+    <!-- Row 3: Choropleth + Gift timeseries -->
+    <div class="row row-2col fade-up" id="d-row3">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="ic">🗺️</span> 선물신청자 지역별 분포</div>
+          <div class="card-sub">주소 기준 시도별 신청자 수</div>
+        </div>
+        <div class="card-body"><div id="chart-choropleth"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="ic">📅</span> 일별 선물신청 추이</div>
+          <div class="card-sub">전체 기간 일별 선물신청 건수</div>
+        </div>
+        <div class="card-body"><div id="chart-gift-time"></div></div>
+      </div>
+    </div>
+  </div>
+</div><!-- /sec-dashboard -->
+
+
+<!-- ════════════════════════════════════
+     SECTION 3: DETAIL
+════════════════════════════════════ -->
+<div id="sec-detail" class="section">
+  <header class="header">
+    <div class="eyebrow"><span class="eyebrow-dot"></span>함평나비대축제 2026</div>
+    <h1>스탬프투어 <span class="accent">Performance</span> 상세 분석</h1>
+    <p>유저 행동 패턴, 지역 분포, 장소별 성과를 심층 분석한 리포트입니다.</p>
+    <div class="divider"></div>
+  </header>
+
+  <nav class="navbar">
+    <div class="nav-left">
+      <button class="nav-btn" onclick="showSection('dashboard')">📊 대시보드</button>
+      <button class="nav-btn active" onclick="showSection('detail')">🔍 상세 분석</button>
+    </div>
+    <button class="nav-btn" onclick="showSection('upload')">↩ 재업로드</button>
+  </nav>
+
+  <div class="container">
+    <!-- Stat strip -->
+    <div class="stat-strip fade-up" id="det-strip">
+      <div class="stat-item c-blue"><div class="label">총 참여 유저</div><div class="value" id="det-users">—</div><div class="sub">스탬프 인증자</div></div>
+      <div class="stat-item c-teal"><div class="label">유저당 평균 스탬프</div><div class="value" id="det-avg">—</div><div class="sub">개/인</div></div>
+      <div class="stat-item c-green"><div class="label">최다 발행일 건수</div><div class="value" id="det-peak">—</div><div class="sub" id="det-peak-date">—</div></div>
+      <div class="stat-item c-amber"><div class="label">선물신청 전환율</div><div class="value" id="det-conv">—</div><div class="sub">참여 유저 대비</div></div>
+    </div>
+
+    <!-- Row 1 -->
+    <div class="row row-2col fade-up" id="det-r1">
+      <div class="card">
+        <div class="card-header"><div class="card-title"><span class="ic">👤</span> 유저별 스탬프 수 분포</div><div class="card-sub">1인당 인증 스탬프 수 히스토그램</div></div>
+        <div class="card-body"><div id="det-user-dist"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><span class="ic">⏰</span> 시간대별 인증 패턴</div><div class="card-sub">0–23시 인증 건수 분포</div></div>
+        <div class="card-body"><div id="det-hour"></div></div>
+      </div>
+    </div>
+
+    <!-- Row 2 -->
+    <div class="row row-2col fade-up" id="det-r2">
+      <div class="card">
+        <div class="card-header"><div class="card-title"><span class="ic">🔗</span> 장소별 스탬프 vs 여행후기 상관관계</div><div class="card-sub">인증수 대비 후기 작성 산점도</div></div>
+        <div class="card-body"><div id="det-scatter"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><span class="ic">📈</span> 누적 스탬프 발행 추이</div><div class="card-sub">기간 내 누적 인증 건수</div></div>
+        <div class="card-body"><div id="det-cumulative"></div></div>
+      </div>
+    </div>
+
+    <!-- Row 3 -->
+    <div class="row row-2col fade-up" id="det-r3">
+      <div class="card">
+        <div class="card-header"><div class="card-title"><span class="ic">🗺️</span> 선물신청자 지역 분포 (버블 지도)</div><div class="card-sub">시도별 신청자 수 지도 시각화</div></div>
+        <div class="card-body"><div id="det-map"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><span class="ic">📋</span> 지역별 선물신청 현황</div><div class="card-sub">시도별 신청자 수 및 비중</div></div>
+        <div class="card-body"><div class="progress-row" id="det-region-progress"></div></div>
+      </div>
+    </div>
+
+    <!-- Row 4 -->
+    <div class="row fade-up" id="det-r4">
+      <div class="card">
+        <div class="card-header"><div class="card-title"><span class="ic">📊</span> 장소별 종합 성과 분석</div><div class="card-sub">인증수, 여행후기 수, 후기 전환율 종합 비교</div></div>
+        <div class="card-body">
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr><th>순위</th><th>장소명</th><th>스탬프 인증수</th><th>여행후기 수</th><th>후기 전환율</th><th>성과</th></tr></thead>
+              <tbody id="det-place-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div><!-- /sec-detail -->
+
+
+<script>
+/* ══════════════════════════════════════
+   STATE
+══════════════════════════════════════ */
+const loaded = { 1: null, 2: null, 3: null };
+let chartsBuilt = false;
+let detailBuilt = false;
+
+/* ══════════════════════════════════════
+   UPLOAD LOGIC
+══════════════════════════════════════ */
+function handleFile(num, file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) throw new Error('배열이 아닙니다');
+      loaded[num] = data;
+      const drop = document.getElementById('drop' + num);
+      drop.classList.add('loaded');
+      const status = document.getElementById('status' + num);
+      status.classList.add('show');
+      document.getElementById('status' + num + '-text').textContent =
+        `${data.length.toLocaleString()}건 로드 완료 — ${file.name}`;
+      checkAllLoaded();
+    } catch(err) {
+      alert('JSON 파싱 오류: 올바른 JSON 배열 파일인지 확인해주세요.\n' + err.message);
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function checkAllLoaded() {
+  if (loaded[1] && loaded[2] && loaded[3]) {
+    document.getElementById('btnStart').classList.add('active');
+  }
+}
+
+function launchDashboard() {
+  showSection('dashboard');
+}
+
+function onDragOver(e, num) { e.preventDefault(); document.getElementById('drop'+num).classList.add('drag-over'); }
+function onDragLeave(e, num) { document.getElementById('drop'+num).classList.remove('drag-over'); }
+function onDrop(e, num) {
+  e.preventDefault();
+  document.getElementById('drop'+num).classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(num, file);
+}
+
+/* ══════════════════════════════════════
+   SECTION SWITCH
+══════════════════════════════════════ */
+function showSection(name) {
+  ['upload','dashboard','detail'].forEach(s => {
+    document.getElementById('sec-'+s).classList.remove('active');
+  });
+  document.getElementById('sec-'+name).classList.add('active');
+  window.scrollTo(0,0);
+
+  if (name === 'dashboard' && !chartsBuilt) {
+    buildDashboard();
+    chartsBuilt = true;
+  }
+  if (name === 'detail' && !detailBuilt) {
+    buildDetail();
+    detailBuilt = true;
+  }
+  // Trigger fade-up
+  setTimeout(() => {
+    document.querySelectorAll('#sec-'+name+' .fade-up').forEach((el,i) => {
+      setTimeout(() => el.classList.add('visible'), i * 120);
+    });
+  }, 50);
+}
+
+/* ══════════════════════════════════════
+   HELPERS
+══════════════════════════════════════ */
+const counter = arr => arr.reduce((acc, v) => { acc[v] = (acc[v]||0)+1; return acc; }, {});
+const getDate = str => str ? str.slice(0,10) : '';
+const N = n => Number(n).toLocaleString('ko-KR');
+const FONT = { family: 'Poppins, sans-serif', size: 12, color: '#64748b' };
+const BASE = {
+  paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+  font: FONT, margin: { t:10, r:16, b:40, l:16 }, showlegend: false,
+};
+const GS = { gridcolor: '#e2e8f0', zerolinecolor: '#e2e8f0' };
+const OPTS = { displayModeBar: false, responsive: true };
+
+/* ══════════════════════════════════════
+   DASHBOARD CHARTS
+══════════════════════════════════════ */
+function buildDashboard() {
+  const stamps  = loaded[1] || [];
+  const reviews = loaded[2] || [];
+  const gifts   = loaded[3] || [];
+
+  /* KPIs */
+  const uniqueUsers = new Set(stamps.map(s=>s['유저'])).size;
+  document.getElementById('kpi-stamps').textContent  = N(stamps.length);
+  document.getElementById('kpi-gifts').textContent   = N(gifts.length);
+  document.getElementById('kpi-reviews').textContent = N(reviews.length);
+  document.getElementById('kpi-stamps-meta').textContent  = `참여 유저 ${N(uniqueUsers)}명`;
+  const giftDates = gifts.map(g=>getDate(g['신청일'])).filter(Boolean).sort();
+  document.getElementById('kpi-gifts-meta').textContent = giftDates.length
+    ? `${giftDates[0]} ~ ${giftDates[giftDates.length-1]}` : '';
+  document.getElementById('kpi-reviews-meta').textContent =
+    `${N(new Set(reviews.map(r=>r['유저'])).size)}명 작성`;
+  document.getElementById('record-summary').textContent =
+    `스탬프 ${N(stamps.length)}건 · 여행후기 ${N(reviews.length)}건 · 선물신청 ${N(gifts.length)}건`;
+
+  /* Chart 1: Time series */
+  const dailyStamps = counter(stamps.map(s=>getDate(s['생성 시간'])));
+  const days = Object.keys(dailyStamps).sort();
+  const yVals = days.map(d=>dailyStamps[d]);
+  const yMax  = Math.max(...yVals);
+  // Korean date labels: "4/24", "4/25" … "5/5"
+  const xLabels = days.map(d => {
+    const [,m,dd] = d.split('-');
+    return `${parseInt(m)}/${parseInt(dd)}`;
+  });
+  Plotly.newPlot('chart-timeseries', [{
+    x: xLabels, y: yVals,
+    type:'scatter', mode:'lines+markers', fill:'tozeroy',
+    line:{ color:'#2563eb', width:2.5, shape:'spline', smoothing:1.2 },
+    marker:{ color:'#2563eb', size:6, line:{color:'#fff',width:1.5} },
+    fillcolor:'rgba(37,99,235,0.10)',
+    hovertemplate:'<b>%{x}</b><br>발행 스탬프: %{y}건<extra></extra>',
+  }], {
+    ...BASE,
+    xaxis:{
+      ...GS, showgrid:false,
+      tickfont:{ family:'Poppins,sans-serif', size:11, color:'#1e293b' },
+      tickmode:'array',
+      tickvals: xLabels,
+      ticktext: xLabels,
+      tickangle: -40,
+      automargin: true,
+    },
+    yaxis:{
+      ...GS,
+      tickfont:{ family:'Poppins,sans-serif', size:11, color:'#1e293b' },
+      tickformat:',d',
+      rangemode:'tozero',
+      range:[0, yMax * 1.15],
+      nticks: 6,
+    },
+    margin:{ t:10, r:20, b:60, l:56 },
+    height:300,
+  }, OPTS);
+
+  /* Chart 2: Donut */
+  const spCounts = counter(stamps.map(s=>s['스탬프']));
+  const pNames = Object.keys(spCounts), pVals = pNames.map(p=>spCounts[p]);
+  const totalStamps = pVals.reduce((a,b)=>a+b,0);
+  const COLORS = ['#2563eb','#0891b2','#059669','#d97706','#7c3aed','#e11d48','#0284c7','#16a34a','#ca8a04','#9333ea'];
+  Plotly.newPlot('chart-donut', [{
+    labels:pNames, values:pVals, type:'pie', hole:0.58,
+    marker:{ colors:COLORS },
+    textinfo:'label+percent',
+    texttemplate:'%{label}<br>%{value}건<br>%{percent}',
+    textposition:'outside',
+    textfont:{ family:'Poppins,sans-serif', size:10.5 },
+    hovertemplate:'<b>%{label}</b><br>%{value}건 (%{percent})<extra></extra>',
+    automargin: true,
+  }], {
+    ...BASE, showlegend:false,
+    margin:{t:30,r:30,b:30,l:30}, height:320,
+  }, OPTS);
+
+  /* Chart 3: Bar stamps — largest at TOP (ascending order for horizontal bar) */
+  const stampTop10 = Object.entries(spCounts).sort((a,b)=>a[1]-b[1]).slice(-10); // ascending → top is biggest
+  const stampMaxVal = stampTop10[stampTop10.length-1][1];
+  Plotly.newPlot('chart-bar-stamps', [{
+    x: stampTop10.map(e=>e[1]),
+    y: stampTop10.map(e=>e[0]),
+    type:'bar', orientation:'h',
+    marker:{ color: stampTop10.map((_,i)=> `rgba(37,99,235,${0.45 + i*0.06})`) },
+    hovertemplate:'<b>%{y}</b><br>인증수: %{x}건<extra></extra>',
+    text: stampTop10.map(e=>N(e[1])),
+    textposition:'inside',
+    insidetextanchor:'end',
+    textfont:{ family:'Poppins,sans-serif', size:11, color:'#fff', weight:700 },
+  }], {
+    ...BASE,
+    xaxis:{
+      ...GS, tickfont:{...FONT,size:11},
+      tickformat:',d',
+      range:[0, stampMaxVal * 1.05],
+    },
+    yaxis:{
+      tickfont:{ family:'Poppins,sans-serif', size:11, color:'#1e293b' },
+      automargin:true,
+    },
+    margin:{ t:10, r:20, b:44, l:10 },
+    height:360, bargap:0.28,
+  }, OPTS);
+
+  /* Chart 4: Bar reviews — largest at TOP */
+  const rpCounts = counter(reviews.map(r=>r['스탬프']));
+  const reviewTop10 = Object.entries(rpCounts).sort((a,b)=>a[1]-b[1]).slice(-10); // ascending → top is biggest
+  const reviewMaxVal = reviewTop10[reviewTop10.length-1][1];
+  Plotly.newPlot('chart-bar-reviews', [{
+    x: reviewTop10.map(e=>e[1]),
+    y: reviewTop10.map(e=>e[0]),
+    type:'bar', orientation:'h',
+    marker:{ color: reviewTop10.map((_,i)=>`rgba(37,99,235,${0.45 + i*0.06})`) },
+    hovertemplate:'<b>%{y}</b><br>후기수: %{x}건<extra></extra>',
+    text: reviewTop10.map(e=>N(e[1])),
+    textposition:'inside',
+    insidetextanchor:'end',
+    textfont:{ family:'Poppins,sans-serif', size:11, color:'#fff', weight:700 },
+  }], {
+    ...BASE,
+    xaxis:{
+      ...GS, tickfont:{...FONT,size:11},
+      tickformat:',d',
+      range:[0, reviewMaxVal * 1.05],
+    },
+    yaxis:{
+      tickfont:{ family:'Poppins,sans-serif', size:11, color:'#1e293b' },
+      automargin:true,
+    },
+    margin:{ t:10, r:20, b:44, l:10 },
+    height:360, bargap:0.28,
+  }, OPTS);
+
+  /* Chart 5: Region bar */
+  const regionMap = {
+    '서울':'서울특별시','부산':'부산광역시','대구':'대구광역시','인천':'인천광역시',
+    '광주':'광주광역시','대전':'대전광역시','울산':'울산광역시',
+    '세종특별자치시':'세종특별자치시','세종':'세종특별자치시',
+    '경기':'경기도','강원':'강원도','충북':'충청북도','충남':'충청남도',
+    '전북특별자치도':'전북특별자치도','전북':'전북특별자치도',
+    '전남':'전라남도','경북':'경상북도','경남':'경상남도','제주':'제주특별자치도',
+  };
+  const gRegRaw = counter(gifts.map(g=>{ const a=g['주소']||''; const k=a.split(' ')[0]||'기타'; return regionMap[k]||k; }));
+  const regSorted = Object.entries(gRegRaw).filter(([k])=>k!=='기타').sort((a,b)=>b[1]-a[1]);
+  Plotly.newPlot('chart-choropleth', [{
+    x: regSorted.map(r=>r[0]),
+    y: regSorted.map(r=>r[1]),
+    type:'bar',
+    marker:{ color:regSorted.map(r=>r[1]), colorscale:[[0,'#bfdbfe'],[0.5,'#3b82f6'],[1,'#1d4ed8']], showscale:false },
+    hovertemplate:'<b>%{x}</b><br>신청자: %{y}명<extra></extra>',
+    text: regSorted.map(r=>r[1]), textposition:'outside',
+    textfont:{ family:'Poppins,sans-serif', size:11, color:'#1e293b' },
+  }], {
+    ...BASE,
+    xaxis:{...GS, tickfont:{...FONT,size:10}, automargin:true, tickangle:-30},
+    yaxis:{...GS, tickfont:FONT},
+    margin:{t:10,r:16,b:80,l:44}, height:340, bargap:0.25,
+  }, OPTS);
+
+  /* Chart 6: Gift timeseries */
+  const dailyGifts = counter(gifts.map(g=>getDate(g['신청일'])));
+  const gDays = Object.keys(dailyGifts).sort();
+  Plotly.newPlot('chart-gift-time', [{
+    x: gDays, y: gDays.map(d=>dailyGifts[d]),
+    type:'scatter', mode:'lines', fill:'tozeroy',
+    line:{ color:'#0891b2', width:2.5, shape:'spline', smoothing:1.2 },
+    fillcolor:'rgba(8,145,178,0.12)',
+    hovertemplate:'<b>%{x}</b><br>선물신청: %{y}건<extra></extra>',
+  }], { ...BASE, xaxis:{...GS,showgrid:false,tickfont:FONT}, yaxis:{...GS,tickfont:FONT}, height:340 }, OPTS);
+}
+
+/* ══════════════════════════════════════
+   DETAIL CHARTS
+══════════════════════════════════════ */
+function buildDetail() {
+  const stamps  = loaded[1] || [];
+  const reviews = loaded[2] || [];
+  const gifts   = loaded[3] || [];
+
+  const userStampCounts = counter(stamps.map(s=>s['유저']));
+  const uniqueUsers = Object.keys(userStampCounts).length;
+  const avgStamp = uniqueUsers ? (stamps.length/uniqueUsers).toFixed(1) : 0;
+  const dailyStamps = counter(stamps.map(s=>getDate(s['생성 시간'])));
+  const peakEntry = Object.entries(dailyStamps).sort((a,b)=>b[1]-a[1])[0]||['—',0];
+  const convRate = uniqueUsers ? ((gifts.length/uniqueUsers)*100).toFixed(1)+'%' : '—';
+
+  document.getElementById('det-users').textContent   = N(uniqueUsers);
+  document.getElementById('det-avg').textContent     = avgStamp;
+  document.getElementById('det-peak').textContent    = N(peakEntry[1]);
+  document.getElementById('det-peak-date').textContent = peakEntry[0];
+  document.getElementById('det-conv').textContent    = convRate;
+
+  /* Histogram */
+  const stampPerUser = Object.values(userStampCounts);
+  Plotly.newPlot('det-user-dist', [{
+    x:stampPerUser, type:'histogram',
+    marker:{ color:'#2563eb', opacity:0.85 }, nbinsx:10,
+    hovertemplate:'%{x}개: %{y}명<extra></extra>',
+  }], { ...BASE, xaxis:{...GS,title:{text:'스탬프 수',font:FONT},tickfont:FONT}, yaxis:{...GS,title:{text:'유저 수',font:FONT},tickfont:FONT}, margin:{t:10,r:16,b:50,l:50}, height:280 }, OPTS);
+
+  /* Hour bar */
+  const hours = stamps.map(s=>{ const t=s['생성 시간']||''; return parseInt(t.slice(11,13))||0; });
+  const hourCounts = Array.from({length:24},(_,h)=>hours.filter(x=>x===h).length);
+  Plotly.newPlot('det-hour', [{
+    x:Array.from({length:24},(_,i)=>`${i}시`), y:hourCounts, type:'bar',
+    marker:{ color:hourCounts, colorscale:[[0,'#bfdbfe'],[0.5,'#3b82f6'],[1,'#1d4ed8']] },
+    hovertemplate:'<b>%{x}</b><br>인증: %{y}건<extra></extra>',
+  }], { ...BASE, xaxis:{...GS,tickfont:{...FONT,size:10}}, yaxis:{...GS,tickfont:FONT}, margin:{t:10,r:16,b:50,l:44}, height:280, bargap:0.2 }, OPTS);
+
+  /* Scatter */
+  const spCounts = counter(stamps.map(s=>s['스탬프']));
+  const rpCounts = counter(reviews.map(r=>r['스탬프']));
+  const places = Object.keys(spCounts);
+  const sx = places.map(p=>spCounts[p]), sy = places.map(p=>rpCounts[p]||0);
+  Plotly.newPlot('det-scatter', [{
+    x:sx, y:sy, mode:'markers+text', text:places,
+    textposition:'top center',
+    textfont:{ family:'Poppins,sans-serif', size:10, color:'#1e293b' },
+    marker:{ size:sx.map(v=>Math.max(10,Math.min(40,v/15))), color:'#2563eb', opacity:0.75, line:{color:'#fff',width:1.5} },
+    hovertemplate:'<b>%{text}</b><br>스탬프: %{x}건<br>후기: %{y}건<extra></extra>',
+  }], { ...BASE, xaxis:{...GS,title:{text:'스탬프 인증수',font:FONT},tickfont:FONT}, yaxis:{...GS,title:{text:'여행후기 수',font:FONT},tickfont:FONT}, margin:{t:20,r:16,b:50,l:50}, height:300 }, OPTS);
+
+  /* Cumulative */
+  const days = Object.keys(dailyStamps).sort();
+  let cum = 0;
+  const cumVals = days.map(d=>{ cum+=dailyStamps[d]; return cum; });
+  Plotly.newPlot('det-cumulative', [{
+    x:days, y:cumVals, type:'scatter', mode:'lines', fill:'tozeroy',
+    line:{ color:'#7c3aed', width:2.5, shape:'spline', smoothing:1.2 },
+    fillcolor:'rgba(124,58,237,0.10)',
+    hovertemplate:'<b>%{x}</b><br>누적: %{y}건<extra></extra>',
+  }], { ...BASE, xaxis:{...GS,showgrid:false,tickfont:FONT}, yaxis:{...GS,tickfont:FONT}, height:300 }, OPTS);
+
+  /* Bubble map */
+  const regionCoords = {
+    '서울특별시':[37.5665,126.9780],'부산광역시':[35.1796,129.0756],
+    '대구광역시':[35.8714,128.6014],'인천광역시':[37.4563,126.7052],
+    '광주광역시':[35.1595,126.8526],'대전광역시':[36.3504,127.3845],
+    '울산광역시':[35.5384,129.3114],'세종특별자치시':[36.4800,127.2890],
+    '경기도':[37.4138,127.5183],'강원도':[37.8228,128.1555],
+    '충청북도':[36.6358,127.4914],'충청남도':[36.5184,126.8000],
+    '전북특별자치도':[35.7175,127.1530],'전라남도':[34.8679,126.9910],
+    '경상북도':[36.4919,128.8889],'경상남도':[35.4606,128.2132],
+    '제주특별자치도':[33.4890,126.4983],
+  };
+  const rMap = {
+    '서울':'서울특별시','부산':'부산광역시','대구':'대구광역시','인천':'인천광역시',
+    '광주':'광주광역시','대전':'대전광역시','울산':'울산광역시',
+    '세종특별자치시':'세종특별자치시','세종':'세종특별자치시',
+    '경기':'경기도','강원':'강원도','충북':'충청북도','충남':'충청남도',
+    '전북특별자치도':'전북특별자치도','전북':'전북특별자치도',
+    '전남':'전라남도','경북':'경상북도','경남':'경상남도','제주':'제주특별자치도',
+  };
+  const gRegRaw = counter(gifts.map(g=>{ const a=g['주소']||''; const k=a.split(' ')[0]||'기타'; return rMap[k]||k; }));
+  const mapL=[],mapLon=[],mapV=[],mapLab=[];
+  Object.entries(gRegRaw).forEach(([r,cnt])=>{ const c=regionCoords[r]; if(c){mapL.push(c[0]);mapLon.push(c[1]);mapV.push(cnt);mapLab.push(r);} });
+  const mxV = Math.max(...mapV);
+  Plotly.newPlot('det-map', [{
+    type:'scattergeo', lat:mapL, lon:mapLon, text:mapLab, customdata:mapV,
+    mode:'markers+text', textposition:'top center',
+    textfont:{ family:'Poppins,sans-serif', size:10.5, color:'#1e293b', weight:600 },
+    marker:{
+      size:mapV.map(v=>Math.max(12,(v/mxV)*52)),
+      color:mapV, colorscale:[[0,'#bfdbfe'],[0.4,'#3b82f6'],[1,'#1d4ed8']],
+      opacity:0.82, line:{color:'#fff',width:2}, showscale:true,
+      colorbar:{ thickness:10, len:0.7, tickfont:{family:'Poppins,sans-serif',size:10}, title:{text:'신청자',font:{family:'Poppins,sans-serif',size:11}} },
+    },
+    hovertemplate:'<b>%{text}</b><br>신청자: %{customdata}명<extra></extra>',
+  }], {
+    paper_bgcolor:'rgba(0,0,0,0)', font:FONT,
+    geo:{
+      scope:'asia',
+      /* 남한 전체(제주 포함)가 한 화면에 들어오는 범위 */
+      lataxis:{ range:[32.8, 38.8] },
+      lonaxis:{ range:[124.6, 130.2] },
+      projection:{ type:'mercator' },
+      showland:true, landcolor:'#f0f9ff',
+      showocean:true, oceancolor:'#dbeafe',
+      showcoastlines:true, coastlinecolor:'#93c5fd', coastlinewidth:1.2,
+      showborders:true, bordercolor:'#60a5fa', borderwidth:0.8,
+      showlakes:false, showframe:false,
+      showcountries:true, countrycolor:'#93c5fd', countrywidth:1,
+      resolution:50,
+    },
+    margin:{t:10,r:10,b:10,l:10}, height:420, showlegend:false,
+  }, OPTS);
+
+  /* Region progress bars */
+  const regSorted = Object.entries(gRegRaw).filter(([k])=>k!=='기타').sort((a,b)=>b[1]-a[1]);
+  const maxR = regSorted[0]?.[1]||1;
+  const pc = document.getElementById('det-region-progress');
+  pc.innerHTML = '';
+  regSorted.forEach(([region,cnt])=>{
+    const pct = ((cnt/maxR)*100).toFixed(0);
+    const totP = ((cnt/gifts.length)*100).toFixed(1);
+    pc.innerHTML += `
+      <div class="progress-item">
+        <div class="progress-label">
+          <span>${region}</span>
+          <span style="color:var(--blue);font-weight:800">${cnt}명 <span style="color:var(--muted);font-weight:400">(${totP}%)</span></span>
+        </div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" data-w="${pct}"></div></div>
+      </div>`;
+  });
+  setTimeout(()=>{ pc.querySelectorAll('.progress-bar-fill').forEach(b=>b.style.width=b.dataset.w+'%'); }, 200);
+
+  /* Place table */
+  const allPlaces = Object.keys(spCounts).sort((a,b)=>spCounts[b]-spCounts[a]);
+  const tbody = document.getElementById('det-place-tbody');
+  tbody.innerHTML = '';
+  allPlaces.forEach((place,i)=>{
+    const sC=spCounts[place]||0, rC=rpCounts[place]||0;
+    const rate=sC?((rC/sC)*100).toFixed(1):'0';
+    const rN=parseFloat(rate);
+    const badge=rN>=10?'<span class="badge badge-green">우수</span>':rN>=6?'<span class="badge badge-blue">보통</span>':'<span class="badge badge-amber">개선필요</span>';
+    tbody.innerHTML+=`<tr><td style="font-weight:700;color:var(--muted)">${i+1}</td><td style="font-weight:600">${place}</td><td style="font-weight:700;color:var(--blue)">${N(sC)}</td><td style="font-weight:700;color:var(--teal)">${N(rC)}</td><td style="font-weight:700">${rate}%</td><td>${badge}</td></tr>`;
+  });
+}
+</script>
+</body>
+</html>
