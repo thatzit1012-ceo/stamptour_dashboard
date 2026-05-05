@@ -287,7 +287,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 
     <!-- File 3 -->
     <div class="upload-section">
-      <div class="section-label"><span>3</span> 선물신청자 (스탬프_현황_여행후기_선물신청자.json)</div>
+      <div class="section-label"><span>3</span> 선물신청자 (선물신청자.json)</div>
       <div class="drop-zone" id="drop3" ondragover="onDragOver(event,3)" ondragleave="onDragLeave(event,3)" ondrop="onDrop(event,3)">
         <span class="drop-icon">🎁</span>
         <h3>선물신청자 파일</h3>
@@ -344,13 +344,13 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
         <div class="kpi-icon">🏷️</div>
         <div><div class="kpi-label">총 발행 스탬프</div><div class="kpi-value" id="kpi-stamps">—</div><div class="kpi-meta" id="kpi-stamps-meta"></div></div>
       </div>
-      <div class="kpi-card teal">
-        <div class="kpi-icon">🎁</div>
-        <div><div class="kpi-label">선물신청자</div><div class="kpi-value" id="kpi-gifts">—</div><div class="kpi-meta" id="kpi-gifts-meta"></div></div>
-      </div>
       <div class="kpi-card green">
         <div class="kpi-icon">✍️</div>
         <div><div class="kpi-label">여행후기</div><div class="kpi-value" id="kpi-reviews">—</div><div class="kpi-meta" id="kpi-reviews-meta"></div></div>
+      </div>
+      <div class="kpi-card teal">
+        <div class="kpi-icon">🎁</div>
+        <div><div class="kpi-label">선물신청자</div><div class="kpi-value" id="kpi-gifts">—</div><div class="kpi-meta" id="kpi-gifts-meta"></div></div>
       </div>
     </div>
 
@@ -742,11 +742,12 @@ function buildDashboard() {
     hovertemplate:'<b>%{x}</b><br>신청자: %{y}명<extra></extra>',
     text: regSorted.map(r=>r[1]), textposition:'outside',
     textfont:{ family:'Poppins,sans-serif', size:11, color:'#1e293b' },
+    cliponaxis: false,
   }], {
     ...BASE,
-    xaxis:{...GS, tickfont:{...FONT,size:10}, automargin:true, tickangle:-30},
-    yaxis:{...GS, tickfont:FONT},
-    margin:{t:10,r:16,b:80,l:44}, height:340, bargap:0.25,
+    xaxis:{...GS, tickfont:{...FONT,size:10}, automargin:true, tickangle:-35},
+    yaxis:{...GS, tickfont:FONT, automargin:true},
+    margin:{t:30,r:24,b:90,l:50}, height:380, bargap:0.25,
   }, OPTS);
 
   /* Chart 6: Gift timeseries */
@@ -788,7 +789,7 @@ function buildDetail() {
     x:stampPerUser, type:'histogram',
     marker:{ color:'#2563eb', opacity:0.85 }, nbinsx:10,
     hovertemplate:'%{x}개: %{y}명<extra></extra>',
-  }], { ...BASE, xaxis:{...GS,title:{text:'스탬프 수',font:FONT},tickfont:FONT}, yaxis:{...GS,title:{text:'유저 수',font:FONT},tickfont:FONT}, margin:{t:10,r:16,b:50,l:50}, height:280 }, OPTS);
+  }], { ...BASE, xaxis:{...GS,title:{text:'스탬프 수',font:FONT},tickfont:FONT,range:[0,10],dtick:1}, yaxis:{...GS,title:{text:'유저 수',font:FONT},tickfont:FONT}, margin:{t:10,r:16,b:50,l:50}, height:280 }, OPTS);
 
   /* Hour bar */
   const hours = stamps.map(s=>{ const t=s['생성 시간']||''; return parseInt(t.slice(11,13))||0; });
@@ -821,7 +822,7 @@ function buildDetail() {
     line:{ color:'#7c3aed', width:2.5, shape:'spline', smoothing:1.2 },
     fillcolor:'rgba(124,58,237,0.10)',
     hovertemplate:'<b>%{x}</b><br>누적: %{y}건<extra></extra>',
-  }], { ...BASE, xaxis:{...GS,showgrid:false,tickfont:FONT}, yaxis:{...GS,tickfont:FONT}, height:300 }, OPTS);
+  }], { ...BASE, xaxis:{...GS,showgrid:false,tickfont:FONT}, yaxis:{...GS,tickfont:{family:'Poppins,sans-serif',size:11,color:'#1e293b'},tickformat:',d',automargin:true}, margin:{t:10,r:20,b:50,l:60}, height:300 }, OPTS);
 
   /* Bubble map */
   const regionCoords = {
